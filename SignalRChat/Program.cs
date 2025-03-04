@@ -17,23 +17,24 @@ namespace SignalRChat
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
-            var app = builder.Build();
+            var app = builder.Build(); 
+            // 映射 Hub
+            app.MapHub<SubscriberChat>("/subscriberhub");
 
             // Configure the HTTP request pipeline.
-            if (app.Environment.IsDevelopment())
+            //if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
-
+            app.UseCors();
             app.UseHttpsRedirection();
 
             app.UseAuthorization();
 
 
             app.MapControllers();
-            // 映射 Hub
-            app.MapHub<SubscriberChat>("/subscriberhub");
+
 
             app.Run();
         }

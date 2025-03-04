@@ -2,20 +2,13 @@
 
 namespace SignalRClient.Utils
 {
-    public class SubscriberReceiverUtil : IAsyncDisposable
+    public class SubscriberReceiverUtil : IHostedService, IDisposable
     {
         private readonly HubConnection _connection;
-        private readonly IConfiguration _configuration;
 
-        public SubscriberReceiverUtil(IConfiguration configuration)
+        public SubscriberReceiverUtil(HubConnection connection ) // 修改构造函数
         {
-            _configuration = configuration;
-            _connection = new HubConnectionBuilder()
-                .WithUrl(_configuration.GetSection("SignalRHubUrl").Value) // 从配置中读取 Hub URL
-                .WithAutomaticReconnect()
-                .Build();
-
-            Console.WriteLine($"SignalRHubUrl: {_configuration.GetSection("SignalRHubUrl").Value}");
+            _connection = connection;
 
             _connection.On<string, string>("ReceiveMessage", (producerType, jsonFormatData) =>
             {
@@ -25,25 +18,25 @@ namespace SignalRClient.Utils
             });
         }
 
-        public async Task StartAsync()
+        public async Task StartAsync(CancellationToken cancellationToken)
         {
-            try
+            if (_connection.State == HubConnectionState.Disconnected)
             {
-                await _connection.StartAsync();
-                Console.WriteLine("SignalR Connected.");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"SignalR connection error: {ex.Message}");
+                await _connection.StartAsync(cancellationToken);
             }
         }
 
-        public async ValueTask DisposeAsync()
+        public async Task StopAsync(CancellationToken cancellationToken)
         {
             if (_connection != null)
             {
-                await _connection.DisposeAsync();
+                await _connection.StopAsync(cancellationToken);
             }
+        }
+
+        public void Dispose()
+        {
+            _connection?.DisposeAsync().GetAwaiter().GetResult();
         }
     }
 
